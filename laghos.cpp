@@ -56,6 +56,10 @@
 #include <iostream>
 #include <fstream>
 
+#ifdef LAGHOS_USE_CALIPER
+#include <caliper/cali.h>
+#endif
+
 using namespace std;
 using namespace mfem;
 using namespace mfem::hydrodynamics;
@@ -71,6 +75,10 @@ int main(int argc, char *argv[])
    MPI_Session mpi(argc, argv);
    int myid = mpi.WorldRank();
 
+#ifdef LAGHOS_USE_CALIPER
+   CALI_CXX_MARK_FUNCTION;
+#endif
+   
    // Print the banner.
    if (mpi.Root()) { display_banner(cout); }
 
@@ -429,6 +437,10 @@ int main(int argc, char *argv[])
       visit_dc.Save();
    }
 
+#ifdef LAGHOS_USE_CALIPER
+   CALI_CXX_MARK_LOOP_BEGIN(timestep, "laghos.timestep");
+#endif
+   
    // Perform time-integration (looping over the time iterations, ti, with a
    // time-step dt). The object oper is of type LagrangianHydroOperator that
    // defines the Mult() method that used by the time integrators.
@@ -440,6 +452,9 @@ int main(int argc, char *argv[])
    BlockVector S_old(S);
    for (int ti = 1; !last_step; ti++)
    {
+#ifdef LAGHOS_USE_CALIPER
+      CALI_CXX_MARK_LOOP_ITERATION(timestep, ti);
+#endif
       if (t + dt >= t_final)
       {
          dt = t_final - t;
@@ -554,6 +569,10 @@ int main(int argc, char *argv[])
          }
       }
    }
+
+#ifdef LAGHOS_USE_CALIPER
+   CALI_CXX_MARK_LOOP_END(timestep);
+#endif                      
 
    switch (ode_solver_type)
    {

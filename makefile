@@ -51,13 +51,17 @@ PREFIX = ./bin
 INSTALL = /usr/bin/install
 
 # Use the MFEM build directory
-MFEM_DIR = ../mfem
-CONFIG_MK = $(MFEM_DIR)/config/config.mk
-TEST_MK = $(MFEM_DIR)/config/test.mk
+# MFEM_DIR = ../mfem
+# CONFIG_MK = $(MFEM_DIR)/config/config.mk
+# TEST_MK = $(MFEM_DIR)/config/test.mk
 # Use the MFEM install directory
 # MFEM_DIR = ../mfem/mfem
 # CONFIG_MK = $(MFEM_DIR)/config.mk
 # TEST_MK = $(MFEM_DIR)/test.mk
+# Use MFEM spack installation
+MFEM_DIR = $(shell spack location --install-dir mfem)
+CONFIG_MK = $(MFEM_DIR)/share/mfem/config.mk
+TEST_MK = $(MFEM_DIR)/share/mfem/test.mk
 
 # Use two relative paths to MFEM: first one for compilation in '.' and second
 # one for compilation in 'lib'.
@@ -96,6 +100,15 @@ endif
 
 LAGHOS_FLAGS = $(CPPFLAGS) $(CXXFLAGS) $(MFEM_INCFLAGS)
 LAGHOS_LIBS = $(MFEM_LIBS)
+
+LAGHOS_USE_CALIPER=YES
+
+ifeq ($(LAGHOS_USE_CALIPER),YES)
+#   CALIPER_DIR   = $(shell spack location --install-dir caliper)
+   CALIPER_DIR   = $(HOME)/local/caliper/toss3-release
+   LAGHOS_LIBS  += -Wl,-rpath $(CALIPER_DIR)/lib64 -L$(CALIPER_DIR)/lib64 -lcaliper-mpi -lcaliper
+   LAGHOS_FLAGS += -I$(CALIPER_DIR)/include -DLAGHOS_USE_CALIPER
+endif
 
 ifeq ($(LAGHOS_DEBUG),YES)
    LAGHOS_FLAGS += -DLAGHOS_DEBUG

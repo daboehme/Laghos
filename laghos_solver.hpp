@@ -26,6 +26,10 @@
 #include <iostream>
 #include <fstream>
 
+#ifdef LAGHOS_USE_CALIPER
+#include <caliper/cali.h>
+#endif
+
 namespace mfem
 {
 
@@ -46,20 +50,54 @@ void v0(const Vector &, Vector &);
 double e0(const Vector &);
 double gamma(const Vector &);
 
+#ifdef LAGHOS_USE_CALIPER
+class CaliperStopWatch : public StopWatch
+{
+    std::string      name;
+    cali::Annotation ann;
+
+public:
+
+    CaliperStopWatch(const char* name_)
+        : StopWatch(), name(name_), ann("laghos.timer", CALI_ATTR_NESTED)
+        { }
+
+    void Start() {
+        ann.begin(name.c_str());
+        StopWatch::Start();
+    }
+
+    void Stop() {
+        StopWatch::Stop();
+        ann.end();
+    }
+};
+#endif
+
 struct TimingData
 {
-   // Total times for all major computations:
-   // CG solves (H1 and L2) / force RHS assemblies / quadrature computations.
-   StopWatch sw_cgH1, sw_cgL2, sw_force, sw_qdata;
-
    // These accumulate the total processed dofs or quad points:
    // #(CG iterations) for the H1 CG solve.
    // #dofs  * #(CG iterations) for the L2 CG solve.
    // #quads * #(RK sub steps) for the quadrature data computations.
    int H1cg_iter, L2dof_iter, quad_tstep;
+    
+#ifdef LAGHOS_USE_CALIPER    
+   // Total times for all major computations:
+   // CG solves (H1 and L2) / force RHS assemblies / quadrature computations.
+   CaliperStopWatch sw_cgH1, sw_cgL2, sw_force, sw_qdata;
+
+   TimingData()
+       : H1cg_iter(0), L2dof_iter(0), quad_tstep(0),
+         sw_cgH1("cgH1"), sw_cgL2("cgL2"), sw_force("force"), sw_qdata("qdata") { }
+#else
+    // Total times for all major computations:
+    // CG solves (H1 and L2) / force RHS assemblies / quadrature computations.
+   StopWatch sw_cgH1, sw_cgL2, sw_force, sw_qdata;
 
    TimingData()
       : H1cg_iter(0), L2dof_iter(0), quad_tstep(0) { }
+#endif    
 };
 
 // Given a solutions state (x, v, e), this class performs all necessary
